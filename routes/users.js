@@ -8,50 +8,54 @@ const jwtSecret = process.env.JWT_SECRET || 'your_jwt_secret';
 
 // Register
 router.post('/register', async (req, res) => {
-  const { username, password, userType } = req.body;
-  const existingUser = await User.findOne({ username });
+  try {
+    const { username, password, usertype } = req.body;
 
-  if (existingUser) {
-    return res.status(400).json({ msg: 'User already exists' });
-  }
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
 
-  const newUser = new User({ username, password, userType });
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  bcrypt.genSalt(10, (err, salt) => {
-    bcrypt.hash(newUser.password, salt, async (err, hash) => {
-      if (err) throw err;
-      newUser.password = hash;
-      await newUser.save();
-      res.json({ msg: 'User registered successfully' });
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      usertype,
     });
-  });
+
+    await newUser.save();
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
+
 
 // Login
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
+  try {
+    const { username, password } = req.body;
 
-  if (!user) {
-    return res.status(400).json({ msg: 'User not found' });
-  }
-
-  bcrypt.compare(password, user.password, (err, isMatch) => {
-    if (err) throw err;
-
-    if (isMatch) {
-      const payload = {
-        id: user.id,
-        username: user.username,
-        userType: user.userType,
-      };
-      jwt.sign(payload, jwtSecret, { expiresIn: 3600 }, (err, token) => {
-        res.json({ token });
-      });
-    } else {
-      res.status(400).json({ msg: 'Incorrect password' });
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid username or password' });
     }
-  });
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: 'Invalid username or password' });
+    }
+
+    const token = jwt.sign({ id: user._id, usertype: user.usertype }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+
+    res.status(200).json({ token });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 module.exports = router;
