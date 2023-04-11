@@ -9,9 +9,18 @@ const menuItemSchema = new Schema(
     price: { type: Number, required: true },
     image: { type: String },
     translations: {
-      pt: { type: String },
-      en: { type: String },
-      es: { type: String }
+      en: {
+        name: { type: String, required: true },
+        description: { type: String, required: true },
+      },
+      es: {
+        name: { type: String, required: true },
+        description: { type: String, required: true },
+      },
+      pt: {
+        name: { type: String, required: true },
+        description: { type: String, required: true },
+      },
     }
   },
   {

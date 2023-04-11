@@ -35,15 +35,22 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete a menu item
-router.delete('/:id', async (req, res) => {
-  const menuItem = await MenuItem.findById(req.params.id);
+router.delete("/:id", async (req, res) => {
+  try {
+    const menuItemId = req.params.id;
 
-  if (!menuItem) {
-    res.status(404).json({ msg: 'Menu item not found' });
-  } else {
-    await menuItem.remove();
-    res.json({ msg: 'Menu item deleted' });
+    const result = await MenuItem.deleteOne({ _id: menuItemId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Menu item not found." });
+    }
+
+    res.status(200).json({ message: "Menu item deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting menu item." });
   }
 });
+
 
 module.exports = router;
