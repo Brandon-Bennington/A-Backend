@@ -1,33 +1,54 @@
-// Part 1
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const express = require('express');
+const router = express.Router();
+const MenuItem = require('../models/menuItem');
+const checkAuth = require('../middleware/check-auth');
 
-const menuItemSchema = new Schema(
-  {
-    name: { type: String, required: true },
-    description: { type: String, required: true },
-    price: { type: Number, required: true },
-    image: { type: String },
-    translations: {
-      en: {
-        name: { type: String, required: true },
-        description: { type: String, required: true },
-      },
-      es: {
-        name: { type: String, required: true },
-        description: { type: String, required: true },
-      },
-      pt: {
-        name: { type: String, required: true },
-        description: { type: String, required: true },
-      },
-    }
-  },
-  {
-    timestamps: true
+// Get all menu items
+router.get('/', async (req, res) => {
+  const menuItems = await MenuItem.find();
+  res.json(menuItems);
+});
+
+// Create a menu item (requires authentication)
+router.post('/', checkAuth, async (req, res) => {
+  const { name, description, price, image, translations } = req.body;
+  const newItem = new MenuItem({ name, description, price, image, translations });
+  await newItem.save();
+  res.status(201).json(newItem);
+});
+
+// Update a menu item (requires authentication)
+router.put('/:id', checkAuth, async (req, res) => {
+  const { name, description, price, image, translations } = req.body;
+  const updatedItem = await MenuItem.findByIdAndUpdate(
+    req.params.id,
+    { name, description, price, image, translations },
+    { new: true }
+  );
+
+  if (!updatedItem) {
+    res.status(404).json({ msg: 'Menu item not found' });
+  } else {
+    res.json(updatedItem);
   }
-);
+});
 
-const MenuItem = mongoose.model('MenuItem', menuItemSchema);
+// Delete a menu item (requires authentication)
+router.delete("/:id", checkAuth, async (req, res) => {
+  try {
+    const menuItemId = req.params.id;
 
-module.exports = MenuItem;
+    const result = await MenuItem.deleteOne({ _id: menuItemId });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: "Menu item not found." });
+    }
+
+    res.status(200).json({ message: "Menu item deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error deleting menu item." });
+  }
+});
+
+module.exports = router;

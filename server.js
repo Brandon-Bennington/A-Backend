@@ -5,12 +5,15 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const menuItemsRouter = require('./routes/menuItems');
 const usersRouter = require('./routes/users');
+const checkAuthRouter = require('./middleware/check-auth');
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/api/menuItems', menuItemsRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/check-auth', checkAuthRouter);
 
 const port = process.env.PORT || 5001;
 
